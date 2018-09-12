@@ -50,7 +50,7 @@ const router = new Router({
       component: Coins,
     },
     {
-      path: '/play',
+      path: '/play/:cmdline',
       name: 'Play',
       component: Play,
       meta: {

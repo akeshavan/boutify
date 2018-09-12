@@ -14,7 +14,7 @@
 
       <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
 
-      <b-navbar-brand to="/">appstract.</b-navbar-brand>
+      <b-navbar-brand to="/">boutify.</b-navbar-brand>
 
       <!-- If the viewport is small, the navbar collapses.
           Everything in b-collapse is what gets collapsed.
