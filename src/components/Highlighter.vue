@@ -5,7 +5,7 @@
      :id="'c'+i"
      :class="{activeHighlight: isInRange[i]}"
      :style="styleRange[i]"
-     @click="removeRange(i)"
+     @click="rangeAction(i)"
      >{{t}}</span>
   </div>
 </template>
@@ -48,10 +48,32 @@
     methods: {
       rangeAction(i) {
         const selectedRange = this.whichRange(i);
+        console.log('range action on char', i, 'in range', selectedRange);
         if (selectedRange) {
-          const rangeAction = this.rangeActions[this.selectedRange];
-          const rangeActionFunc = this[rangeAction]
-          rangeActionFunc(i);
+          const rangeAction = this.rangeActions[selectedRange];
+          console.log('range action on char', i, 'in range', selectedRange, rangeAction);
+          switch (rangeAction) {
+            case 'removeRange':
+              console.log('removing range')
+              this.removeRange(i, selectedRange);
+              break;
+            case 'emitRemoveRange':
+              console.log('removing and emitting range')
+              this.removeRange(i, selectedRange);
+              this.emitRange(i, selectedRange);
+              break;
+            case 'emitRange':
+              console.log('emitting range');
+              this.emitRange(i, selectedRange);
+            default:
+              // this.removeRange(i, selectedRange);
+          }
+        }
+      },
+      emitRange(idx, selectedRange) {
+        //const selectedRange = this.whichRange(idx);
+        if (selectedRange) {
+          this.$emit('rangeClick', selectedRange, idx);
         }
       },
       whichRange(idx) {
@@ -68,16 +90,18 @@
           return null;
         }
       },
-      removeRange(i) {
+      removeRange(i, cRange) {
         // console.log('remove range', i)
-        const rElem = _.filter(this.ranges, (r) => {
+        const ranges = this.rangeClasses[cRange]
+
+        const rElem = _.filter(ranges, (r) => {
           return i <= r[1] && i >= r[0]
         })
         // console.log(rElem);
-        const idx = this.ranges.indexOf(rElem[0]);
+        const idx = ranges.indexOf(rElem[0]);
         // console.log(idx, this.ranges);
         if (idx > -1) {
-          this.rangeClasses[this.currentRange].splice(idx, 1);
+          this.rangeClasses[cRange].splice(idx, 1);
         }
       },
       inRange(idx) {

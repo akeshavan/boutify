@@ -3,14 +3,14 @@
     <div class="jumbotron landing">
       <h1>{{msg}}</h1>
       <p class="lead buttons mt-3">
-        Be part of the movement to make science better
+        Help us annotate help strings for Boutiques
       </p>
       <p class="buttons mt-3">
         <router-link class="btn btn-primary white" to="/play"> Play Now </router-link>
-        <b-button v-scroll-to="'#learnhow0'">Learn How</b-button>
+        <b-button v-scroll-to="'#learnhow2'">Learn How</b-button>
       </p>
     </div>
-    <div id="learnhow0" class="instruction">
+    <!-- <div id="learnhow0" class="instruction">
       <h1 >Tap the number</h1>
       <p class="w-100 text-center">
         <img class="phone mx-auto d-block" src="https://media.giphy.com/media/fxR1CmdpkHMVVarKlp/giphy.gif"/>
@@ -36,7 +36,7 @@
         <b-button v-scroll-to="'#learnhow2'" class="mx-auto">Next</b-button>
       </p>
     </div>
-
+ -->
 
     <div id="learnhow2" class="instruction">
       <h1>Compete</h1>
@@ -88,7 +88,7 @@ export default {
   name: 'Home',
   data() {
     return {
-      msg: 'appstract.',
+      msg: 'boutify.',
     };
   },
 };

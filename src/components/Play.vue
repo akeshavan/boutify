@@ -14,15 +14,13 @@
 
       <div id="game" class="abtext">
         <h4 class="text-left">Highlight the help text</h4>
-        <b-alert show dismissible v-if="userInfo.isAnonymous" variant="danger">
-          <router-link to="/login"> Log In</router-link> or <router-link to="/signup"> Sign Up</router-link> now to compete on the leaderboard!
-        </b-alert>
 
         <highlighter :text="helpText"
           :currentRange="currentRange"
           :rangeClasses="rangeClasses"
           :rangeStyles="rangeStyles"
           :rangeActions="rangeActions"
+          v-on:rangeClick="setCurrentRange"
         ></highlighter>
 
       </div>
@@ -40,28 +38,28 @@
   </div>
 
 
-  <b-navbar toggleable="md" type="dark" variant="danger"
+  <b-navbar toggleable="md"
     class="navbar-fixed-bottom" id="bottonNav"
-    style="">
+    :style="rangeStyles[currentRange]">
+    <div>You are highlighting: {{currentParamText}}</div>
 
-    <b-navbar-nav>
-      <b-nav-form>
+    <b-navbar-nav class="ml-auto">
+
+      <b-nav-form right>
         <!--<b-form-input size="sm" class="mr-sm-2" type="text" placeholder="Search"/>-->
-        <!-- <b-button size="md" class="my-2 my-sm-0 ml-2" v-on:click="next">
+        <b-button size="md" class="my-2 my-sm-0 ml-2" v-on:click="next">
           <span v-if="status === 'loading'">
             <i class="fa fa-spinner fa-spin"></i>
           </span>
           <span v-else>
-            <span v-if="N">
+            <span>
               Submit
             </span>
-            <span v-else>
-              Skip
-            </span>
           </span>
-        </b-button> -->
+        </b-button>
 
       </b-nav-form>
+
     </b-navbar-nav>
 
   </b-navbar>
@@ -182,6 +180,10 @@
   import bookshelf from './bookshelf';
   import highlighter from './Highlighter';
 
+  const d3 = require('d3-scale-chromatic');
+  d3.color = require('d3-color');
+  window.d3 = d3;
+
   nlp.plugin({
     regex: {
       '[0-9]+': 'Value',
@@ -193,11 +195,6 @@
   Vue.use(VueHammer);
 
   Vue.use(require('vue-shortkey'));
-
-  function randomInt(min, max) {
-    return Math.floor(Math.random() * ((max - min) + 1)) + min;
-  }
-
 
   export default {
     name: 'play',
@@ -239,7 +236,16 @@
       };
     },
     computed: {
-
+      currentParamText() {
+        if (this.rangeClasses[this.currentRange]) {
+          if (this.rangeClasses[this.currentRange.replace('h', 'p')][0]) {
+            const rMin = this.rangeClasses[this.currentRange.replace('h', 'p')][0][0];
+            const rMax = this.rangeClasses[this.currentRange.replace('h', 'p')][0][1];
+            return this.helpText.slice(rMin, rMax);
+          }
+          //return this.helpText.slice(rMin, rMax - rMin);
+        }
+      }
     },
     watch: {
       N() {
@@ -257,34 +263,119 @@
       },
       $route() {
         console.log('params are', this.$route.params.cmdline);
+        this.renderCmdline();
       },
     },
     mounted() {
-      this.startTime = new Date();
-      this.setCurrentAbstract();
-      this.cmdline = `${config.imageBaseUrl}${this.$route.params.cmdline}.${config.imageExt}`;
-      axios.get(this.cmdline).then((resp) => {
-        console.log('response is', resp.data);
-        this.helpTextAll = resp.data.helptext;
-        this.helpText = this.helpTextAll.join('\n');
-        this.helpParams = resp.data.params;
-      });
+      this.renderCmdline();
     },
     components: { GridLoader, bookshelf, highlighter, },
     directives: {
     },
     methods: {
+      renderCmdline() {
+        this.startTime = new Date();
+        this.cmdline = `${config.imageBaseUrl}${this.$route.params.cmdline}.${config.imageExt}`;
+        axios.get(this.cmdline).then((resp) => {
+          console.log('response is', resp.data);
+          this.helpTextAll = resp.data.helptext;
+          this.helpText = this.helpTextAll.join('\n');
+          this.helpParams = resp.data.params;
+          this.initRanges();
 
+          this.status = 'ready';
+        });
+      },
+      setCurrentRange(cRange, idx) {
+        console.log('setting current range');
+        this.currentRange = cRange.replace('p', 'h');
+      },
+      initRanges() {
+        const rangeClasses = {};
+        const rangeStyles = {};
+        const currentRange = 'h0';
+        const rangeActions = {};
+
+        this.helpParams.forEach((p,i) => {
+          const pclassname = `p${i}`;
+          const hclassname = `h${i}`;
+
+          rangeClasses[pclassname] = [p.param_range];
+          rangeClasses[hclassname] = [p.help_range];
+
+          const pcolor = d3.schemeDark2[ i % 8 ]; //d3.interpolateSpectral(i / (this.helpParams.length * 2));
+          const hcolor = d3.schemeDark2[ i % 8 ];//d3.interpolateSpectral(i / (this.helpParams.length * 2));
+
+          rangeStyles[pclassname] = {
+            'background-color': pcolor,
+            'color': 'white',
+            'cursor': 'pointer',
+          };
+          rangeStyles[hclassname] = {
+            'background-color': hcolor,
+            'color': 'white',
+            'cursor': 'pointer',
+          };
+
+          rangeActions[pclassname] = 'emitRange';
+          rangeActions[hclassname] = 'emitRemoveRange';
+        });
+
+      this.rangeClasses = rangeClasses;
+      this.rangeActions = rangeActions;
+      this.rangeStyles = rangeStyles;
+      this.currentRange = currentRange;
+      const self = this;
+
+      db.ref('latestCmdlines').child(this.$route.params.cmdline).once('value')
+        .then((snap) => {
+          const val = snap.val();
+          const newRangeClasses = this.rangeClasses;
+          console.log('new range classes', newRangeClasses);
+
+          if (val) {
+            if (val.annot) {
+              // pop out all the h classes, and then replace w/ rclasses
+              const allKeys = Object.keys(newRangeClasses);
+              const annotKeys = Object.keys(val.annot);
+              _.map(allKeys, (k) => {
+                if (k[0] == 'h') {
+                   if (annotKeys.indexOf(k) >= 0) {
+                     this.rangeClasses[k] = val.annot[k];
+                   } else {
+                     this.rangeClasses[k] = [];
+                   }
+                }
+              });
+            }
+          }
+        });
+
+      },
       preventSubmit(e) {
         e.preventDefault();
         this.next();
       },
       next() {
-        this.setCurrentAbstract();
-      },
-      setCurrentAbstract() {
+        // encode the indices
+        const rC = Object.keys(this.rangeClasses);
+        const toSubmit = {}
+
+        _.map(rC, (rangeKey) => {
+          const entry = {}
+          if (rangeKey[0] === 'h') {
+            toSubmit[rangeKey] = this.rangeClasses[rangeKey].reduce(function(acc, cur, i) {
+                            acc[i] = cur;
+                            return acc;
+                          }, {});
+          }
+        });
+
+        // emit to App to submit
+        this.$emit('submit', toSubmit, this.$route.params.cmdline);
 
       },
+
       countDownChanged(dismissCountDown) {
         this.dismissCountDown = dismissCountDown;
       },

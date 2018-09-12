@@ -52,6 +52,7 @@
 
   export default {
     name: 'login',
+    props: ['currentCmd'],
     data() {
       return {
         form: {
@@ -71,7 +72,7 @@
                   (user) => {
                     // console.log('user', user);
                     this.$emit('login', user);
-                    this.$router.replace('play');
+                    this.$router.replace(`play/${this.currentCmd}`);
                   },
                   (err) => {
                     this.errors.show = true;

@@ -54,7 +54,7 @@ const router = new Router({
       name: 'Play',
       component: Play,
       meta: {
-        requiresAuth: false,
+        requiresAuth: true,
       },
     },
     {

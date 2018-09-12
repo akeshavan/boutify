@@ -10,7 +10,7 @@
     -->
     <div class="content">
 
-    <b-navbar toggleable="md" type="dark" variant="danger" sticky>
+    <b-navbar toggleable="md" type="dark" variant="secondary" sticky>
 
       <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
 
@@ -25,14 +25,14 @@
         <b-navbar-nav>
           <b-nav-item to="/about" exact>About</b-nav-item>
           <b-nav-item to="/leaderboard">Leaderboard</b-nav-item>
-          <b-nav-item to="/play">Play</b-nav-item>
+          <b-nav-item :to="'/play/'+currentCmd">Play</b-nav-item>
         </b-navbar-nav>
 
         <!-- Right aligned nav items -->
 
         <b-navbar-nav class="ml-auto">
           <!-- This part only displays if the user is authenticated -->
-          <b-nav-item-dropdown right v-if="userInfo && !userInfo.isAnonymous">
+          <b-nav-item-dropdown right v-if="userInfo">
             <template slot="button-content">
               <em>{{userInfo.displayName}}</em>
             </template>
@@ -75,9 +75,9 @@
                    :levels="levels"
                    :anonID="anonID"
                    :currentLevel="currentLevel"
-                   v-on:taken_tutorial="setTutorial"
-                   v-on:updatedN="updateN"
+                   :currentCmd="currentCmd"
                    v-on:updatedStatus="updateStatus"
+                   v-on:submit="submitAnnotation"
                    ref="routeView"
                    />
     </div>
@@ -110,6 +110,7 @@
 
 <script>
 import Vue from 'vue';
+import axios from 'axios';
 import BootstrapVue from 'bootstrap-vue';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue/dist/bootstrap-vue.css';
@@ -128,6 +129,7 @@ import elephant_grey from './assets/elephant_gray.svg';
 import narwhal_grey from './assets/narwhal_gray.svg';
 import monkey_grey from './assets/monkey_gray.svg';
 import '../node_modules/font-awesome/css/font-awesome.min.css';
+import config from './config';
 
 
 // explicit installation required in module environments
@@ -146,60 +148,86 @@ const generate = function generate() {
   return rtn;
 };
 
+function randomInt(min, max) {
+  return Math.floor(Math.random() * ((max - min) + 1)) + min;
+}
+
+// https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
 export default {
   name: 'app',
   data() {
     return {
       userInfo: {},
       allUsers: [],
+      userSeen: [],
       anonID: null,
       Nusers: 50,
       N: 0,
+      currentCmd: '3dresample',
       status: 'loading',
       levels: {
         0: {
           level: 0,
           min: 0,
-          max: 100,
+          max: 20,
           character: null,
           img: null,
           img_grey: null,
         },
         1: {
           level: 1,
-          min: 101,
-          max: 750,
+          min: 21,
+          max: 50,
           character: 'jelly',
           img: jelly,
           img_grey: jelly_grey,
         },
         2: {
           level: 2,
-          min: 751,
-          max: 2000,
+          min: 51,
+          max: 100,
           character: 'giraffe',
           img: giraffe,
           img_grey: giraffe_grey,
         },
         3: {
           level: 3,
-          min: 2001,
-          max: 3500,
+          min: 101,
+          max: 500,
           character: 'elephant',
           img: elephant,
           img_grey: elephant_grey,
         },
         4: {
           level: 4,
-          min: 3501,
-          max: 6000,
+          min: 501,
+          max: 1000,
           character: 'narwhal',
           img: narwhal,
           img_grey: narwhal_grey,
         },
         5: {
           level: 5,
-          min: 6001,
+          min: 1001,
           max: 8000,
           character: 'monkey',
           img: monkey,
@@ -210,20 +238,33 @@ export default {
   },
 
   mounted() {
-    firebase.auth().signInAnonymously().catch(function(error) {
-      // Handle Errors here.
-      var errorCode = error.code;
-      var errorMessage = error.message;
-      // ...
+    // make sure our database has all the programs listed on github
+
+    axios.get(config.allSrcs).then((resp) => {
+      const srcs = resp.data;
+      console.log(srcs);
+      const existCmds = _.map(this.allCmds, v => v['.value'])
+      _.map(srcs, (sj) => {
+        const s = sj.split('.json')[0];
+        // of all the github sources check to see if it exists in firebase
+        if (existCmds.indexOf(s) < 0) {
+          // the command isn't recorded in firebase! so add it and give it 0 votes
+          db.ref('allCmds').child(s).set(0);
+        }
+      });
+
     });
-    this.anonID = generate();
   },
 
   firebase: {
     allUsers: db.ref('/users/').orderByChild('score'),
+    allCmds: db.ref('/allCmds'),
   },
 
   computed: {
+    cmdPriority() {
+      return _.sortBy(this.allCmds, ".value")
+    },
     userData() {
       let data = {};
       if (!this.userInfo) {
@@ -250,25 +291,76 @@ export default {
 
   },
   methods: {
-    updateN(N) {
-      this.N = N;
+    cmdUserPriority() {
+      if (this.userInfo) {
+        // remove all the cmds that the user has seen
+        console.log(Object.keys(this.userSeen));
+        const cmdsRemain = _.filter(this.cmdPriority, (v) => {
+          console.log('v', v['.key'])
+            return Object.keys(this.userSeen).indexOf(v['.key']) < 0
+        });
+        console.log('cmdsRemain', cmdsRemain);
+        // get the smallest value that hasn't been seen by user
+        const minUnseen = cmdsRemain[0]['.value']
+        console.log('minUNseen', minUnseen);
+        // then filter the commands so they are only the smallest value;
+        const cmdsSmallest = _.filter(cmdsRemain, (c) => {
+          return c['.value'] == minUnseen;
+        });
+
+        console.log('smallest cmds', cmdsSmallest);
+        // and then randomize the order;
+        return shuffle(cmdsSmallest);
+
+      }
+      return null
     },
-    submit() {
-      this.$refs.manual.hide();
+    submitAnnotation(annot, cmdline) {
+      console.log('you are submitting', annot, cmdline);
+      // submit to db
+      db.ref('cmdlines').child(cmdline).push(
+        { annot, user: this.userInfo.displayName, time: new Date().toISOString() }
+      )
+
+      db.ref('latestCmdlines').child(cmdline).set(
+        { annot, user: this.userInfo.displayName, time: new Date().toISOString() }
+      )
+
+      db.ref('doneCmds')
+        .child(this.userInfo.displayName)
+        .child(cmdline)
+        .transaction(function(score) {
+          // If score has never been set, score will be `null`.
+          return (score || 0) + 1;
+        });
+
+      db.ref('allCmds').child(cmdline)
+        .transaction(function(score) {
+          // If score has never been set, score will be `null`.
+          return (score || 0) + 1;
+        });
+
+      this.incrementUserScore();
+
+      // get next cmdline
       this.next();
     },
-    caseStudy() {
-      this.N = 1;
-      this.$refs.manual.hide();
-      this.next();
+    incrementUserScore() {
+      const ref = db.ref('users').child(this.userInfo.displayName).child('score');
+      ref.transaction(function(score) {
+        // If score has never been set, score will be `null`.
+        return (score || 0) + 1;
+      });
     },
     updateStatus(status) {
       console.log('updating status');
       this.status = status;
     },
     next() {
-      this.$refs.routeView.N = this.N;
-      this.$refs.routeView.next();
+      console.log('getting the next cmdline to play');
+      const nextCmds = this.cmdUserPriority();
+      this.currentCmd = nextCmds[0]['.key'];
+      this.$router.push(`/play/${this.currentCmd}`);
     },
     preventSubmit(e) {
       e.preventDefault();
@@ -277,15 +369,12 @@ export default {
     logout() {
       firebase.auth().signOut().then(() => {
         this.userInfo = null;
-        this.$router.replace('login');
+        this.$router.push('login');
       });
     },
     setUser(user) {
       console.log('setting user', this.userInfo);
       this.userInfo = user;
-    },
-    setTutorial(val) {
-      db.ref(`/users/${this.userInfo.displayName}`).child('taken_tutorial').set(val);
     },
   },
 
@@ -295,6 +384,9 @@ export default {
     firebase.auth().onAuthStateChanged((user) => {
       console.log('hi');
       self.userInfo = user;
+      db.ref('doneCmds').child(self.userInfo.displayName).on('value', (snap) => {
+        self.userSeen = snap.val();
+      });
     });
     console.log('app db is', db);
   },
@@ -331,7 +423,7 @@ export default {
   }
 
   #app {
-    font-family: 'NotoSans-Regular', Helvetica, Arial, sans-serif;
+    font-family: 'Courier', Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
