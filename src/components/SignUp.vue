@@ -113,7 +113,7 @@
         firebase.database().ref('users').child(this.form.username).once('value')
         .then((snapshot) => {
           const val = snapshot.val();
-          console.log('val is', val);
+          console.log('existing username val is', val);
           if (!val) {
             this.createAccount();
           } else {
@@ -146,6 +146,7 @@
       },
 
       insertUser(user) {
+        console.log('inserting user', user.displayName);
         firebase.database().ref('users').child(user.displayName).set({
           score: 0,
           level: 0,
@@ -153,9 +154,13 @@
           taken_tutorial: false,
           consent: this.form.consented,
           consentedOn: new Date(),
+        }).then(() => {
+            console.log('user inserted, now go home');
+            this.$router.push('/');
         });
       },
       updateProfile(user) {
+        console.log('updating user profile', user);
         user.updateProfile({
           displayName: this.form.username,
         }).then(() => {
@@ -164,7 +169,7 @@
           if (config.needsTutorial) {
             this.$router.replace('tutorial');
           } else {
-            this.$router.replace('play');
+            this.$router.replace('');
           }
         }, (err) => {
             // An error happened.

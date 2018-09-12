@@ -25,7 +25,7 @@
         <b-navbar-nav>
           <b-nav-item to="/about" exact>About</b-nav-item>
           <b-nav-item to="/leaderboard">Leaderboard</b-nav-item>
-          <b-nav-item :to="'/play/'+currentCmd">Play</b-nav-item>
+          <b-nav-item v-if="userInfo && currentCmd" :to="'/play/'+currentCmd">Play</b-nav-item>
         </b-navbar-nav>
 
         <!-- Right aligned nav items -->
@@ -82,28 +82,6 @@
                    />
     </div>
   </div>
-    <!--<div class="footer bg-dark">
-      <table style="height: 200px; width: 100%;">
-        <tbody>
-          <tr>
-            <td class="align-middle text-center text-white">
-
-            </td>
-          </tr>
-          <tr>
-            <td class="align-middle text-center text-white">
-              <router-link to="/about" class="text-white">About</router-link>
-              <br>
-            </td>
-          </tr>
-          <tr>
-            <td class="align-middle text-center text-white">
-            icons on this site were <a href='https://www.freepik.com/free-vector/cute-woodland-animals_1585897.htm'>Designed by Freepik</a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>-->
 
   </div>
 </template>
@@ -178,11 +156,13 @@ export default {
     return {
       userInfo: {},
       allUsers: [],
+      currentCmd: null,
+      allCmds: [],
       userSeen: [],
       anonID: null,
       Nusers: 50,
       N: 0,
-      currentCmd: '3dresample',
+      // currentCmd: '3dresample',
       status: 'loading',
       levels: {
         0: {
@@ -239,26 +219,52 @@ export default {
 
   mounted() {
     // make sure our database has all the programs listed on github
+    if (this.userInfo) {
+      axios.get(config.allSrcs).then((resp) => {
+        const srcs = resp.data;
+        // console.log(srcs);
+        const existCmds = _.map(this.allCmds, v => v['.value'])
+        _.map(srcs, (sj) => {
+          const s = sj.split('.json')[0];
+          // of all the github sources check to see if it exists in firebase
+          if (existCmds.indexOf(s) < 0) {
+            // the command isn't recorded in firebase! so add it and give it 0 votes
+            db.ref('allCmds').child(s).set(0);
+          }
+        });
 
-    axios.get(config.allSrcs).then((resp) => {
-      const srcs = resp.data;
-      console.log(srcs);
-      const existCmds = _.map(this.allCmds, v => v['.value'])
-      _.map(srcs, (sj) => {
-        const s = sj.split('.json')[0];
-        // of all the github sources check to see if it exists in firebase
-        if (existCmds.indexOf(s) < 0) {
-          // the command isn't recorded in firebase! so add it and give it 0 votes
-          db.ref('allCmds').child(s).set(0);
-        }
       });
-
-    });
+    }
   },
 
   firebase: {
     allUsers: db.ref('/users/').orderByChild('score'),
-    allCmds: db.ref('/allCmds'),
+    // allCmds: db.ref('/allCmds'),
+  },
+
+  watch: {
+    userInfo() {
+      const self = this;
+
+      if (this.userInfo) {
+        // there is a user display name but a command hasn't been defined.
+        // grab all the commands the user has done.
+        if (self.userInfo.displayName && !this.currentCmd) {
+          db.ref('doneCmds').child(self.userInfo.displayName).on('value', (snap) => {
+            const val = snap.val();
+            if (val) {
+              self.userSeen = val
+            } else {
+              self.userSeen = [];
+            }
+            console.log('the user seen is', self.userSeen);
+            // const nextCmds = this.cmdUserPriority();
+            self.currentCmd = this.getCurrentCmd();
+            this.$router.replace(`play/${this.currentCmd}`);
+          });
+        }
+      }
+    },
   },
 
   computed: {
@@ -291,26 +297,42 @@ export default {
 
   },
   methods: {
+    getCurrentCmd() {
+      if (this.userInfo) {
+        console.log('getting the current command for', this.userInfo.displayName);
+        const nextCmds = this.cmdUserPriority();
+        return nextCmds[0]['.key'];
+      }
+    },
+
     cmdUserPriority() {
       if (this.userInfo) {
         // remove all the cmds that the user has seen
-        console.log(Object.keys(this.userSeen));
-        const cmdsRemain = _.filter(this.cmdPriority, (v) => {
-          console.log('v', v['.key'])
-            return Object.keys(this.userSeen).indexOf(v['.key']) < 0
-        });
-        console.log('cmdsRemain', cmdsRemain);
-        // get the smallest value that hasn't been seen by user
-        const minUnseen = cmdsRemain[0]['.value']
-        console.log('minUNseen', minUnseen);
-        // then filter the commands so they are only the smallest value;
-        const cmdsSmallest = _.filter(cmdsRemain, (c) => {
-          return c['.value'] == minUnseen;
-        });
+        let cmdsRemain;
+        if (this.userSeen) {
+          cmdsRemain = _.filter(this.cmdPriority, (v) => {
+            console.log('v', v['.key'])
+              return Object.keys(this.userSeen).indexOf(v['.key']) < 0
+          });
+        } else {
+          cmdsRemain = this.cmdPriority;
+        }
+        console.log('remaining commands', cmdsRemain);
 
-        console.log('smallest cmds', cmdsSmallest);
-        // and then randomize the order;
-        return shuffle(cmdsSmallest);
+        if (cmdsRemain.length) {
+          console.log('cmdsRemain', cmdsRemain);
+          // get the smallest value that hasn't been seen by user
+          const minUnseen = cmdsRemain[0]['.value']
+          console.log('minUNseen', minUnseen);
+          // then filter the commands so they are only the smallest value;
+          const cmdsSmallest = _.filter(cmdsRemain, (c) => {
+            return c['.value'] == minUnseen;
+          });
+
+          console.log('smallest cmds', cmdsSmallest);
+          // and then randomize the order;
+          return shuffle(cmdsSmallest);
+        }
 
       }
       return null
@@ -358,8 +380,8 @@ export default {
     },
     next() {
       console.log('getting the next cmdline to play');
-      const nextCmds = this.cmdUserPriority();
-      this.currentCmd = nextCmds[0]['.key'];
+      // const nextCmds = this.cmdUserPriority();
+      this.currentCmd = this.getCurrentCmd();
       this.$router.push(`/play/${this.currentCmd}`);
     },
     preventSubmit(e) {
@@ -382,11 +404,22 @@ export default {
     this.userInfo = firebase.auth().currentUser;
     const self = this;
     firebase.auth().onAuthStateChanged((user) => {
-      console.log('hi');
+      console.log('the auth state has changed. user is', user);
       self.userInfo = user;
-      db.ref('doneCmds').child(self.userInfo.displayName).on('value', (snap) => {
-        self.userSeen = snap.val();
-      });
+      if (user) {
+
+        // the user can now see all of the commands
+        db.ref('allCmds').on('value', (snap) => {
+          const vals = snap.val();
+          if (vals) {
+            const keys = Object.keys(vals);
+            this.allCmds = _.map(keys, (k) => {
+              return {'.key': k, '.value': vals[k]}
+            });
+          }
+        });
+
+      }
     });
     console.log('app db is', db);
   },
