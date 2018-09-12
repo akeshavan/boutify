@@ -18,7 +18,11 @@
           <router-link to="/login"> Log In</router-link> or <router-link to="/signup"> Sign Up</router-link> now to compete on the leaderboard!
         </b-alert>
 
-        <highlighter :text="helpText" :init="helpParams"></highlighter>
+        <highlighter :text="helpText"
+          :currentRange="currentRange"
+          :rangeClasses="rangeClasses"
+          :rangeStyles="rangeStyles"
+        ></highlighter>
 
       </div>
 
@@ -219,6 +223,15 @@
         helpText: null,
         helpTextAll: '',
         helpParams: [],
+
+        rangeClasses: {default: []},
+        currentRange: 'default',
+        rangeStyles: {
+          default: {
+            'background-color': '#ffc107c9',
+          }
+        },
+
       };
     },
     computed: {

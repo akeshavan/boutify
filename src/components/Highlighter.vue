@@ -19,16 +19,10 @@
   Vue.component('text-highlight', TextHighlight);
 
   export default {
-    props: ['text', 'init'],//, 'options', 'init'],
+    props: ['text', 'init', 'rangeClasses', 'currentRange', 'rangeStyles'],//, 'options', 'init'],
     data() {
       return {
-        rangeClasses: {default: []},
-        currentRange: 'default',
-        rangeStyles: {
-          default: {
-            'background-color': '#ffc107c9',
-          }
-        }
+
       }
     },
     computed: {
