@@ -19,7 +19,7 @@
   Vue.component('text-highlight', TextHighlight);
 
   export default {
-    props: ['text', 'init', 'rangeClasses', 'currentRange', 'rangeStyles'],//, 'options', 'init'],
+    props: ['text', 'init', 'rangeClasses', 'currentRange', 'rangeStyles', 'rangeActions'],//, 'options', 'init'],
     data() {
       return {
 
@@ -46,6 +46,14 @@
       },
     },
     methods: {
+      rangeAction(i) {
+        const selectedRange = this.whichRange(i);
+        if (selectedRange) {
+          const rangeAction = this.rangeActions[this.selectedRange];
+          const rangeActionFunc = this[rangeAction]
+          rangeActionFunc(i);
+        }
+      },
       whichRange(idx) {
         const rangeKeys = Object.keys(this.rangeClasses);
         const rangeBelong = _.filter(rangeKeys, (k) => {

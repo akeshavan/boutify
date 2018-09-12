@@ -22,6 +22,7 @@
           :currentRange="currentRange"
           :rangeClasses="rangeClasses"
           :rangeStyles="rangeStyles"
+          :rangeActions="rangeActions"
         ></highlighter>
 
       </div>
@@ -230,6 +231,9 @@
           default: {
             'background-color': '#ffc107c9',
           }
+        },
+        rangeActions: {
+          default: 'removeRange',
         },
 
       };
