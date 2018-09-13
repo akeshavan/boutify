@@ -85,7 +85,7 @@
         if (rangeNames.length === 1) {
           return this.rangeStyles[rangeNames[0]];
         } else {
-          const allRangeColors = _.map(rangeNames, r => this.rangeStyles[r]);
+          const allRangeColors = _.map(rangeNames, r => this.rangeStyles[r]['background-color']);
           console.log(this.rangeStyles, rangeNames, allRangeColors);
           const sWidth = 20;
           let bgStringStart = `repeating-linear-gradient(45deg, ${allRangeColors[0]}, ${allRangeColors[0]} ${sWidth}px`;
@@ -94,7 +94,7 @@
             bgStringStart += `,${allRangeColors[i]} ${sWidth}px`;
             bgStringStart += `,${allRangeColors[i]} ${sWidth * (i + 1)}px`;
           }
-
+          console.log(`${bgStringStart})`);
           return {
             color: 'white',
             background: `${bgStringStart})`,
