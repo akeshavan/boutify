@@ -331,12 +331,12 @@
         .then((snap) => {
           const val = snap.val();
           const newRangeClasses = this.rangeClasses;
+          const allKeys = Object.keys(newRangeClasses);
           console.log('new range classes', newRangeClasses);
 
           if (val) {
             if (val.annot) {
               // pop out all the h classes, and then replace w/ rclasses
-              const allKeys = Object.keys(newRangeClasses);
               const annotKeys = Object.keys(val.annot);
               _.map(allKeys, (k) => {
                 if (k[0] == 'h') {
@@ -347,6 +347,17 @@
                    }
                 }
               });
+            } else {
+              console.log('there is nothing to annotate, but did someone delete stuff?');
+              if (val.user && val.time) {
+                // delete all h keys!
+                _.map(allKeys, (k) => {
+                  if (k[0] == 'h') {
+                    this.rangeClasses[k] = [];
+                  }
+                });
+
+              }
             }
           }
         });
