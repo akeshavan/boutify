@@ -382,9 +382,10 @@ export default {
     },
 
     logout() {
+      console.log('logging out the user');
+      this.$router.push('/login');
       firebase.auth().signOut().then(() => {
         this.userInfo = null;
-        this.$router.push('login');
       });
     },
 
