@@ -25,6 +25,8 @@
 
       </div>
 
+      <sidebar v-if="sidebarShow"></sidebar>
+
       <b-alert :show="dismissCountDown"
          :variant="score.variant"
          class="toast"
@@ -47,6 +49,8 @@
 
       <b-nav-form right>
         <!--<b-form-input size="sm" class="mr-sm-2" type="text" placeholder="Search"/>-->
+
+        <b-button @click="sidebarShow = !sidebarShow"> show sidebar </b-button>
 
         <b-button size="md" class="my-2 my-sm-0 ml-2" v-on:click="addNewParam" v-if="highlightMode === 'help'">
           <span v-if="status === 'loading'">
@@ -201,7 +205,8 @@
   import { db } from '../firebaseConfig';
   import config from '../config';
   import bookshelf from './bookshelf';
-  import highlighter from './Highlighter';
+  import highlighter from './Highlighter3';
+  import sidebar from './Sidebar';
 
   const d3 = require('d3-scale-chromatic');
   d3.color = require('d3-color');
@@ -258,6 +263,7 @@
         },
 
         highlightMode: 'help',
+        sidebarShow: false,
 
       };
     },
@@ -296,7 +302,7 @@
     mounted() {
       this.renderCmdline();
     },
-    components: { GridLoader, bookshelf, highlighter },
+    components: { GridLoader, bookshelf, highlighter, sidebar },
     directives: {
     },
     methods: {
