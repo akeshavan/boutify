@@ -182,6 +182,7 @@
 
   const d3 = require('d3-scale-chromatic');
   d3.color = require('d3-color');
+
   window.d3 = d3;
 
   nlp.plugin({
@@ -222,12 +223,12 @@
         helpTextAll: '',
         helpParams: [],
 
-        rangeClasses: {default: []},
+        rangeClasses: { default: [] },
         currentRange: 'default',
         rangeStyles: {
           default: {
             'background-color': '#ffc107c9',
-          }
+          },
         },
         rangeActions: {
           default: 'removeRange',
@@ -243,9 +244,10 @@
             const rMax = this.rangeClasses[this.currentRange.replace('h', 'p')][0][1];
             return this.helpText.slice(rMin, rMax);
           }
-          //return this.helpText.slice(rMin, rMax - rMin);
+          // return this.helpText.slice(rMin, rMax - rMin);
         }
-      }
+        return null;
+      },
     },
     watch: {
       N() {
@@ -269,7 +271,7 @@
     mounted() {
       this.renderCmdline();
     },
-    components: { GridLoader, bookshelf, highlighter, },
+    components: { GridLoader, bookshelf, highlighter },
     directives: {
     },
     methods: {
@@ -286,7 +288,7 @@
           this.status = 'ready';
         });
       },
-      setCurrentRange(cRange, idx) {
+      setCurrentRange(cRange) {
         console.log('setting current range');
         this.currentRange = cRange.replace('p', 'h');
       },
@@ -296,38 +298,37 @@
         const currentRange = 'h0';
         const rangeActions = {};
 
-        this.helpParams.forEach((p,i) => {
+        this.helpParams.forEach((p, i) => {
           const pclassname = `p${i}`;
           const hclassname = `h${i}`;
 
           rangeClasses[pclassname] = [p.param_range];
           rangeClasses[hclassname] = [p.help_range];
 
-          const pcolor = d3.schemeDark2[ i % 8 ]; //d3.interpolateSpectral(i / (this.helpParams.length * 2));
-          const hcolor = d3.schemeDark2[ i % 8 ];//d3.interpolateSpectral(i / (this.helpParams.length * 2));
+          const pcolor = d3.schemeDark2[i % 8];
+          const hcolor = d3.schemeDark2[i % 8];
 
           rangeStyles[pclassname] = {
             'background-color': pcolor,
-            'color': 'white',
-            'cursor': 'pointer',
+            color: 'white',
+            cursor: 'pointer',
           };
           rangeStyles[hclassname] = {
             'background-color': hcolor,
-            'color': 'white',
-            'cursor': 'pointer',
+            color: 'white',
+            cursor: 'pointer',
           };
 
           rangeActions[pclassname] = 'emitRange';
           rangeActions[hclassname] = 'emitRemoveRange';
         });
 
-      this.rangeClasses = rangeClasses;
-      this.rangeActions = rangeActions;
-      this.rangeStyles = rangeStyles;
-      this.currentRange = currentRange;
-      const self = this;
+        this.rangeClasses = rangeClasses;
+        this.rangeActions = rangeActions;
+        this.rangeStyles = rangeStyles;
+        this.currentRange = currentRange;
 
-      db.ref('latestCmdlines').child(this.$route.params.cmdline).once('value')
+        db.ref('latestCmdlines').child(this.$route.params.cmdline).once('value')
         .then((snap) => {
           const val = snap.val();
           const newRangeClasses = this.rangeClasses;
@@ -339,12 +340,12 @@
               // pop out all the h classes, and then replace w/ rclasses
               const annotKeys = Object.keys(val.annot);
               _.map(allKeys, (k) => {
-                if (k[0] == 'h') {
-                   if (annotKeys.indexOf(k) >= 0) {
-                     this.rangeClasses[k] = val.annot[k];
-                   } else {
-                     this.rangeClasses[k] = [];
-                   }
+                if (k[0] === 'h') {
+                  if (annotKeys.indexOf(k) >= 0) {
+                    this.rangeClasses[k] = val.annot[k];
+                  } else {
+                    this.rangeClasses[k] = [];
+                  }
                 }
               });
             } else {
@@ -352,16 +353,14 @@
               if (val.user && val.time) {
                 // delete all h keys!
                 _.map(allKeys, (k) => {
-                  if (k[0] == 'h') {
+                  if (k[0] === 'h') {
                     this.rangeClasses[k] = [];
                   }
                 });
-
               }
             }
           }
         });
-
       },
       preventSubmit(e) {
         e.preventDefault();
@@ -370,21 +369,19 @@
       next() {
         // encode the indices
         const rC = Object.keys(this.rangeClasses);
-        const toSubmit = {}
+        const toSubmit = {};
 
         _.map(rC, (rangeKey) => {
-          const entry = {}
           if (rangeKey[0] === 'h') {
-            toSubmit[rangeKey] = this.rangeClasses[rangeKey].reduce(function(acc, cur, i) {
-                            acc[i] = cur;
-                            return acc;
-                          }, {});
+            toSubmit[rangeKey] = this.rangeClasses[rangeKey].reduce((acc, cur, i) => {
+              acc[i] = cur;
+              return acc;
+            }, {});
           }
         });
 
         // emit to App to submit
         this.$emit('submit', toSubmit, this.$route.params.cmdline);
-
       },
 
       countDownChanged(dismissCountDown) {

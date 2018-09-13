@@ -102,11 +102,13 @@ import giraffe from './assets/giraffe.svg';
 import elephant from './assets/elephant.svg';
 import narwhal from './assets/narwhal.svg';
 import monkey from './assets/monkey.svg';
+/* eslint-disable */
 import jelly_grey from './assets/jelly_gray.svg';
 import giraffe_grey from './assets/giraffe_gray.svg';
 import elephant_grey from './assets/elephant_gray.svg';
 import narwhal_grey from './assets/narwhal_gray.svg';
 import monkey_grey from './assets/monkey_gray.svg';
+/* eslint-enable */
 import '../node_modules/font-awesome/css/font-awesome.min.css';
 import config from './config';
 
@@ -116,25 +118,24 @@ Vue.use(VueFire);
 Vue.use(BootstrapVue);
 
 
-function randomInt(min, max) {
-  return Math.floor(Math.random() * ((max - min) + 1)) + min;
-}
-
 // https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
 function shuffle(array) {
-  var currentIndex = array.length, temporaryValue, randomIndex;
+  let currentIndex = array.length;
+  let temporaryValue;
+  let randomIndex;
 
   // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
-
+  while (currentIndex !== 0) {
     // Pick a remaining element...
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex -= 1;
 
     // And swap it with the current element.
     temporaryValue = array[currentIndex];
+    /* eslint-disable */
     array[currentIndex] = array[randomIndex];
     array[randomIndex] = temporaryValue;
+    /* eslint-enable */
   }
 
   return array;
@@ -224,7 +225,6 @@ export default {
             db.ref('allCmds').child(s).set(0);
           }
         });
-
       });
     }
   },
@@ -250,7 +250,7 @@ export default {
 
   computed: {
     cmdPriority() {
-      return _.sortBy(this.allCmds, ".value")
+      return _.sortBy(this.allCmds, '.value');
     },
     userData() {
       let data = {};
@@ -284,13 +284,14 @@ export default {
         const nextCmds = this.cmdUserPriority();
         return nextCmds[0]['.key'];
       }
+      return null;
     },
 
     updateDoneCmds() {
       db.ref('doneCmds').child(this.userInfo.displayName).on('value', (snap) => {
         const val = snap.val();
         if (val) {
-          this.userSeen = val
+          this.userSeen = val;
         } else {
           this.userSeen = [];
         }
@@ -306,10 +307,7 @@ export default {
         // remove all the cmds that the user has seen
         let cmdsRemain;
         if (this.userSeen) {
-          cmdsRemain = _.filter(this.cmdPriority, (v) => {
-            // console.log('v', v['.key'])
-              return Object.keys(this.userSeen).indexOf(v['.key']) < 0
-          });
+          cmdsRemain = _.filter(this.cmdPriority, v => Object.keys(this.userSeen).indexOf(v['.key']) < 0);
         } else {
           cmdsRemain = this.cmdPriority;
         }
@@ -318,48 +316,41 @@ export default {
         if (cmdsRemain.length) {
           console.log('cmdsRemain', cmdsRemain);
           // get the smallest value that hasn't been seen by user
-          const minUnseen = cmdsRemain[0]['.value']
+          const minUnseen = cmdsRemain[0]['.value'];
           console.log('minUNseen', minUnseen);
           // then filter the commands so they are only the smallest value;
-          const cmdsSmallest = _.filter(cmdsRemain, (c) => {
-            return c['.value'] == minUnseen;
-          });
+          const cmdsSmallest = _.filter(cmdsRemain, c => c['.value'] === minUnseen);
 
           console.log('smallest cmds', cmdsSmallest);
           // and then randomize the order;
           return shuffle(cmdsSmallest);
-        } else {
-          return shuffle(this.cmdPriority);
         }
 
+        return shuffle(this.cmdPriority);
       }
-      return null
+      return null;
     },
 
     submitAnnotation(annot, cmdline) {
       console.log('you are submitting', annot, cmdline);
       // submit to db
-      db.ref('cmdlines').child(cmdline).push(
-        { annot, user: this.userInfo.displayName, time: new Date().toISOString() }
-      )
+      db.ref('cmdlines').child(cmdline).push({ annot,
+        user: this.userInfo.displayName,
+        time: new Date().toISOString(),
+      },
+      );
 
       db.ref('latestCmdlines').child(cmdline).set(
-        { annot, user: this.userInfo.displayName, time: new Date().toISOString() }
-      )
+        { annot, user: this.userInfo.displayName, time: new Date().toISOString() },
+      );
 
       db.ref('doneCmds')
         .child(this.userInfo.displayName)
         .child(cmdline)
-        .transaction(function(score) {
-          // If score has never been set, score will be `null`.
-          return (score || 0) + 1;
-        });
+        .transaction(score => (score || 0) + 1);
 
       db.ref('allCmds').child(cmdline)
-        .transaction(function(score) {
-          // If score has never been set, score will be `null`.
-          return (score || 0) + 1;
-        });
+        .transaction(score => (score || 0) + 1);
 
       this.incrementUserScore();
 
@@ -369,10 +360,7 @@ export default {
 
     incrementUserScore() {
       const ref = db.ref('users').child(this.userInfo.displayName).child('score');
-      ref.transaction(function(score) {
-        // If score has never been set, score will be `null`.
-        return (score || 0) + 1;
-      });
+      ref.transaction(score => (score || 0) + 1);
     },
 
     updateStatus(status) {
@@ -419,16 +407,17 @@ export default {
           const vals = snap.val();
           if (vals) {
             const keys = Object.keys(vals);
+            /* eslint-disable */
             this.allCmds = _.map(keys, (k) => {
-              return {'.key': k, '.value': vals[k]}
+              return { '.key': k, '.value': vals[k] };
             });
+            /* eslint-enable*/
           }
         });
 
         if (user.displayName) {
           this.updateDoneCmds();
         }
-
       }
     });
     console.log('app db is', db);
