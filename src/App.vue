@@ -307,7 +307,7 @@ export default {
         let cmdsRemain;
         if (this.userSeen) {
           cmdsRemain = _.filter(this.cmdPriority, (v) => {
-            console.log('v', v['.key'])
+            // console.log('v', v['.key'])
               return Object.keys(this.userSeen).indexOf(v['.key']) < 0
           });
         } else {
@@ -424,6 +424,10 @@ export default {
             });
           }
         });
+
+        if (user.displayName) {
+          this.updateDoneCmds();
+        }
 
       }
     });
