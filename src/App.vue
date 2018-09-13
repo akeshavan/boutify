@@ -78,6 +78,7 @@
                    :currentCmd="currentCmd"
                    v-on:updatedStatus="updateStatus"
                    v-on:submit="submitAnnotation"
+                   v-on:login="setUser"
                    ref="routeView"
                    />
     </div>
@@ -114,17 +115,6 @@ import config from './config';
 Vue.use(VueFire);
 Vue.use(BootstrapVue);
 
-const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-const ID_LENGTH = 8;
-
-const generate = function generate() {
-  let rtn = '';
-  for (let i = 0; i < ID_LENGTH; i += 1) {
-    rtn += ALPHABET.charAt(Math.floor(Math.random() * ALPHABET.length));
-  }
-  return rtn;
-};
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * ((max - min) + 1)) + min;
@@ -223,12 +213,14 @@ export default {
       axios.get(config.allSrcs).then((resp) => {
         const srcs = resp.data;
         // console.log(srcs);
-        const existCmds = _.map(this.allCmds, v => v['.value'])
+        const existCmds = _.map(this.allCmds, v => v['.key']);
+        // console.log(existCmds);
         _.map(srcs, (sj) => {
           const s = sj.split('.json')[0];
           // of all the github sources check to see if it exists in firebase
           if (existCmds.indexOf(s) < 0) {
             // the command isn't recorded in firebase! so add it and give it 0 votes
+            // console.log('s', s);
             db.ref('allCmds').child(s).set(0);
           }
         });
@@ -243,28 +235,17 @@ export default {
   },
 
   watch: {
-    userInfo() {
-      const self = this;
-
-      if (this.userInfo) {
-        // there is a user display name but a command hasn't been defined.
-        // grab all the commands the user has done.
-        if (self.userInfo.displayName && !this.currentCmd) {
-          db.ref('doneCmds').child(self.userInfo.displayName).on('value', (snap) => {
-            const val = snap.val();
-            if (val) {
-              self.userSeen = val
-            } else {
-              self.userSeen = [];
-            }
-            console.log('the user seen is', self.userSeen);
-            // const nextCmds = this.cmdUserPriority();
-            self.currentCmd = this.getCurrentCmd();
-            this.$router.replace(`play/${this.currentCmd}`);
-          });
-        }
-      }
-    },
+    // userInfo() {
+    //   const self = this;
+    //   console.log('watching user info', this.userInfo);
+    //   if (this.userInfo != undefined) {
+    //     // there is a user display name but a command hasn't been defined.
+    //     // grab all the commands the user has done by displayName.
+    //     if (this.userInfo.displayName) {
+    //       this.updateDoneCmds();
+    //     }
+    //   }
+    // },
   },
 
   computed: {
@@ -305,6 +286,21 @@ export default {
       }
     },
 
+    updateDoneCmds() {
+      db.ref('doneCmds').child(this.userInfo.displayName).on('value', (snap) => {
+        const val = snap.val();
+        if (val) {
+          this.userSeen = val
+        } else {
+          this.userSeen = [];
+        }
+        console.log('the user seen is', this.userSeen);
+        // const nextCmds = this.cmdUserPriority();
+        this.currentCmd = this.getCurrentCmd();
+        this.$router.replace(`play/${this.currentCmd}`);
+      });
+    },
+
     cmdUserPriority() {
       if (this.userInfo) {
         // remove all the cmds that the user has seen
@@ -337,6 +333,7 @@ export default {
       }
       return null
     },
+
     submitAnnotation(annot, cmdline) {
       console.log('you are submitting', annot, cmdline);
       // submit to db
@@ -367,6 +364,7 @@ export default {
       // get next cmdline
       this.next();
     },
+
     incrementUserScore() {
       const ref = db.ref('users').child(this.userInfo.displayName).child('score');
       ref.transaction(function(score) {
@@ -374,29 +372,36 @@ export default {
         return (score || 0) + 1;
       });
     },
+
     updateStatus(status) {
       console.log('updating status');
       this.status = status;
     },
+
     next() {
       console.log('getting the next cmdline to play');
       // const nextCmds = this.cmdUserPriority();
       this.currentCmd = this.getCurrentCmd();
       this.$router.push(`/play/${this.currentCmd}`);
     },
+
     preventSubmit(e) {
       e.preventDefault();
       this.$refs.manual.hide();
     },
+
     logout() {
       firebase.auth().signOut().then(() => {
         this.userInfo = null;
         this.$router.push('login');
       });
     },
+
     setUser(user) {
       console.log('setting user', this.userInfo);
       this.userInfo = user;
+      console.log(this.userInfo.displayName);
+      this.updateDoneCmds();
     },
   },
 
@@ -407,7 +412,6 @@ export default {
       console.log('the auth state has changed. user is', user);
       self.userInfo = user;
       if (user) {
-
         // the user can now see all of the commands
         db.ref('allCmds').on('value', (snap) => {
           const vals = snap.val();

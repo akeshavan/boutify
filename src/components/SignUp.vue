@@ -156,7 +156,8 @@
           consentedOn: new Date(),
         }).then(() => {
             console.log('user inserted, now go home');
-            this.$router.push('/');
+            //this.$router.push('/');
+            this.$emit('login', user);
         });
       },
       updateProfile(user) {
