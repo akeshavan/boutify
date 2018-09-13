@@ -323,22 +323,41 @@
 
         // this.rangeClasses[pclassname] = [];
         // this.rangeClasses[hclassname] = [];
-
-        this.rangeStyles[pclassname] = {
+        this.$set(this.rangeStyles, pclassname, {
           'border-bottom-color': pcolor,
           'border-bottom-style': 'solid',
           'border-top-color': pcolor,
           'border-top-style': 'solid',
           'font-weight': 'bold',
-          // 'background-color': pcolor,
+          'background-color': 'white',
           color: pcolor,
           cursor: 'pointer',
-        };
-        this.rangeStyles[hclassname] = {
+          mergeable: false,
+        });
+
+        // this.rangeStyles[pclassname] = {
+        //   'border-bottom-color': pcolor,
+        //   'border-bottom-style': 'dashed',
+        //   'border-top-color': pcolor,
+        //   'border-top-style': 'solid',
+        //   'font-weight': 'bold',
+        //   'background-color': pcolor,
+        //   color: pcolor,
+        //   cursor: 'pointer',
+        // };
+
+        this.$set(this.rangeStyles, hclassname, {
           'background-color': hcolor,
           color: 'white',
           cursor: 'pointer',
-        };
+          mergeable: true,
+        });
+
+        // this.rangeStyles[hclassname] = {
+        //   'background-color': hcolor,
+        //   color: 'black',
+        //   cursor: 'pointer',
+        // };
 
         this.rangeActions[pclassname] = 'emitRange';
         this.rangeActions[hclassname] = 'emitRemoveRange';
@@ -362,8 +381,10 @@
         });
       },
       setCurrentRange(cRange) {
-        console.log('setting current range');
-        this.currentRange = cRange.replace('p', 'h');
+        console.log('setting current range', cRange);
+        if (cRange != null) {
+          this.currentRange = cRange[0].replace('p', 'h');
+        }
       },
       initRanges() {
         const rangeClasses = {};
@@ -393,14 +414,17 @@
             'border-top-color': pcolor,
             'border-top-style': 'solid',
             'font-weight': 'bold',
+            'background-color': 'white',
             // 'background-color': pcolor,
             color: pcolor,
             cursor: 'pointer',
+            mergeable: false,
           };
           rangeStyles[hclassname] = {
             'background-color': hcolor,
             color: 'white',
             cursor: 'pointer',
+            mergeable: true,
           };
 
           rangeActions[pclassname] = 'emitRange';
