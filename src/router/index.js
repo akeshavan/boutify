@@ -93,35 +93,36 @@ const router = new Router({
 router.beforeEach((to, from, next) => {
   const currentUser = firebase.auth().currentUser;
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
+  // const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
 
   if (requiresAuth && !currentUser) next('login');
+  else next();
   // make sure the user has take the tutorial
-  if (to.name === 'Play') {
-    if (currentUser) {
-      firebase.database().ref(`/users/${currentUser.displayName}`).once('value')
-        .then((snap) => {
-          const data = snap.val();
-          if (data) {
-            if (!data.taken_tutorial && config.needsTutorial) {
-              next('tutorial');
-            }
-          }
-        });
-    }
-  }
+  // if (to.name === 'Play') {
+  //   if (currentUser) {
+  //     firebase.database().ref(`/users/${currentUser.displayName}`).once('value')
+  //       .then((snap) => {
+  //         const data = snap.val();
+  //         if (data) {
+  //           if (!data.taken_tutorial && config.needsTutorial) {
+  //             next('tutorial');
+  //           }
+  //         }
+  //       });
+  //   }
+  // }
 
-  if (requiresAdmin) {
-    console.log('requires admin');
-    firebase.database().ref(`/settings/admins/${currentUser.displayName}`).once('value')
-    .then((snap) => {
-      console.log('snap is', snap.val());
-      if (requiresAdmin && !snap.val()) next('unauthorized');
-      else next();
-    });
-  } else {
-    next();
-  }
+  // if (requiresAdmin) {
+  //   console.log('requires admin');
+  //   firebase.database().ref(`/settings/admins/${currentUser.displayName}`).once('value')
+  //   .then((snap) => {
+  //     console.log('snap is', snap.val());
+  //     if (requiresAdmin && !snap.val()) next('unauthorized');
+  //     else next();
+  //   });
+  // } else {
+  //   next();
+  // }
 });
 
 export default router;

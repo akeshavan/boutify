@@ -298,7 +298,8 @@ export default {
         console.log('the user seen is', this.userSeen);
         // const nextCmds = this.cmdUserPriority();
         this.currentCmd = this.getCurrentCmd();
-        this.$router.replace(`play/${this.currentCmd}`);
+        console.log('here i am trying to route us to /play/', this.currentCmd);
+        this.$router.replace(`/play/${this.currentCmd}`);
       });
     },
 
@@ -396,25 +397,26 @@ export default {
   },
 
   created() {
+    // grab all of the commands that need to be annotated, even before we know
+    // who the user is.
+    db.ref('allCmds').on('value', (snap) => {
+      const vals = snap.val();
+      if (vals) {
+        const keys = Object.keys(vals);
+        /* eslint-disable */
+        this.allCmds = _.map(keys, (k) => {
+          return { '.key': k, '.value': vals[k] };
+        });
+        /* eslint-enable*/
+      }
+    });
+
     this.userInfo = firebase.auth().currentUser;
     const self = this;
     firebase.auth().onAuthStateChanged((user) => {
       console.log('the auth state has changed. user is', user);
       self.userInfo = user;
       if (user) {
-        // the user can now see all of the commands
-        db.ref('allCmds').on('value', (snap) => {
-          const vals = snap.val();
-          if (vals) {
-            const keys = Object.keys(vals);
-            /* eslint-disable */
-            this.allCmds = _.map(keys, (k) => {
-              return { '.key': k, '.value': vals[k] };
-            });
-            /* eslint-enable*/
-          }
-        });
-
         if (user.displayName) {
           this.updateDoneCmds();
         }
