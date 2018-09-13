@@ -328,6 +328,8 @@ export default {
           console.log('smallest cmds', cmdsSmallest);
           // and then randomize the order;
           return shuffle(cmdsSmallest);
+        } else {
+          return shuffle(this.cmdPriority);
         }
 
       }
