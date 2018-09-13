@@ -149,6 +149,7 @@
 
           if ((range[1] - range[0]) > 0) {
             this.updateRange(range);
+            this.$forceUpdate();
             selection.removeAllRanges();
           }
         }

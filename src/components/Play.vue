@@ -47,6 +47,29 @@
 
       <b-nav-form right>
         <!--<b-form-input size="sm" class="mr-sm-2" type="text" placeholder="Search"/>-->
+
+        <b-button size="md" class="my-2 my-sm-0 ml-2" v-on:click="addNewParam" v-if="highlightMode === 'help'">
+          <span v-if="status === 'loading'">
+            <i class="fa fa-spinner fa-spin"></i>
+          </span>
+          <span v-else>
+            <span>
+              Add New Parameter
+            </span>
+          </span>
+        </b-button>
+
+        <b-button size="md" class="my-2 my-sm-0 ml-2" v-on:click="doneAddingParam" v-else>
+          <span v-if="status === 'loading'">
+            <i class="fa fa-spinner fa-spin"></i>
+          </span>
+          <span v-else>
+            <span>
+              Done Adding Parameter
+            </span>
+          </span>
+        </b-button>
+
         <b-button size="md" class="my-2 my-sm-0 ml-2" v-on:click="next">
           <span v-if="status === 'loading'">
             <i class="fa fa-spinner fa-spin"></i>
@@ -234,6 +257,8 @@
           default: 'removeRange',
         },
 
+        highlightMode: 'help',
+
       };
     },
     computed: {
@@ -275,6 +300,48 @@
     directives: {
     },
     methods: {
+      doneAddingParam() {
+        this.highlightMode = 'help';
+        this.currentRange = this.currentRange.replace('p', 'h');
+      },
+      addNewParam() {
+        this.highlightMode = 'param';
+        const N = _.filter(Object.keys(this.rangeClasses), k => k[0] === 'p').length;
+        const pclassname = `p${N + 1}`;
+        const hclassname = `h${N + 1}`;
+        const pcolor = d3.schemeDark2[(N + 1) % 8];
+        const hcolor = pcolor;
+
+        this.$set(this.rangeClasses, pclassname, []);
+        this.$set(this.rangeClasses, hclassname, []);
+
+        // this.rangeClasses[pclassname] = [];
+        // this.rangeClasses[hclassname] = [];
+
+        this.rangeStyles[pclassname] = {
+          'border-bottom-color': pcolor,
+          'border-bottom-style': 'solid',
+          'border-top-color': pcolor,
+          'border-top-style': 'solid',
+          'font-weight': 'bold',
+          // 'background-color': pcolor,
+          color: pcolor,
+          cursor: 'pointer',
+        };
+        this.rangeStyles[hclassname] = {
+          'background-color': hcolor,
+          color: 'white',
+          cursor: 'pointer',
+        };
+
+        this.rangeActions[pclassname] = 'emitRange';
+        this.rangeActions[hclassname] = 'emitRemoveRange';
+
+        this.currentRange = pclassname;
+
+        this.$forceUpdate();
+      },
+
       renderCmdline() {
         this.startTime = new Date();
         this.cmdline = `${config.imageBaseUrl}${this.$route.params.cmdline}.${config.imageExt}`;
@@ -307,10 +374,21 @@
 
           const pcolor = d3.schemeDark2[i % 8];
           const hcolor = d3.schemeDark2[i % 8];
+          // let hcolor = d3.color.color(d3.schemeDark2[i % 8]);
+          // hcolor.opacity = 0.6;
+
+          /* eslint-disable */
+          // hcolor = hcolor + '';
+          /* eslint-enable */
 
           rangeStyles[pclassname] = {
-            'background-color': pcolor,
-            color: 'white',
+            'border-bottom-color': pcolor,
+            'border-bottom-style': 'solid',
+            'border-top-color': pcolor,
+            'border-top-style': 'solid',
+            'font-weight': 'bold',
+            // 'background-color': pcolor,
+            color: pcolor,
             cursor: 'pointer',
           };
           rangeStyles[hclassname] = {
