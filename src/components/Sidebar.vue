@@ -22,7 +22,7 @@
       :showPrintMargin="true"
       :showGutter="true"
       :highlightActiveLine="true"
-      mode="javascript"
+      mode="json"
       theme="monokai"
       :onChange="onChange"
       name="editor"
@@ -38,6 +38,7 @@ import brace from 'brace';
 import { Ace as AceEditor, Split as SplitEditor } from 'vue2-brace-editor';
 
 import 'brace/mode/javascript';
+import 'brace/mode/json';
 import 'brace/theme/monokai';
 
 export default {
@@ -54,6 +55,11 @@ export default {
     // const editor = ace.edit("editor");
     // editor.setTheme("ace/theme/twilight");
     // editor.session.setMode("ace/mode/javascript");
+  },
+  methods: {
+    onChange() {
+
+    },
   },
   computed: {
     getSidebarStyle() {
