@@ -25,7 +25,10 @@
 
       </div>
 
-      <sidebar v-if="sidebarShow"></sidebar>
+      <sidebar v-if="sidebarShow"
+       :param="currentParamText"
+       :sidebarStyle="this.rangeStyles[this.currentParamName]">
+      </sidebar>
 
       <b-alert :show="dismissCountDown"
          :variant="score.variant"
@@ -274,6 +277,15 @@
             const rMin = this.rangeClasses[this.currentRange.replace('h', 'p')][0][0];
             const rMax = this.rangeClasses[this.currentRange.replace('h', 'p')][0][1];
             return this.helpText.slice(rMin, rMax);
+          }
+          // return this.helpText.slice(rMin, rMax - rMin);
+        }
+        return null;
+      },
+      currentParamName() {
+        if (this.rangeClasses[this.currentRange]) {
+          if (this.rangeClasses[this.currentRange.replace('h', 'p')][0]) {
+            return this.currentRange.replace('h', 'p');
           }
           // return this.helpText.slice(rMin, rMax - rMin);
         }
