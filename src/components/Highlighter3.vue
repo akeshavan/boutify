@@ -27,6 +27,11 @@
     },
     computed: {
       rangeText() {
+        /*
+          This function breaks up the text by the provided range indices from
+          the rangeClasses. RangeClasses have key "class name"
+          and value [[start0,end0], [start1, end1]...].
+        */
         const outputs = [];
         let currentEntry = {};
         const tracker = [];
@@ -49,6 +54,10 @@
                   currentEntry.rangeName = r;
                   currentEntry.txt = this.text[i];
                   currentEntry.start = i;
+                  if (r != null) {
+                    currentEntry.rangeBounds = _.filter(this.rangeClasses[r],
+                      bound => i >= bound[0] && i <= bound[1])[0];
+                  }
                 } else {
                   // they are in the same group
                   currentEntry.txt += this.text[i];
@@ -66,15 +75,15 @@
       // isInRange() {
       //   return _.map(this.text, (obj, idx) => this.inRange(idx));
       // },
-      styleRange() {
-        return _.map(this.text, (obj, idx) => {
-          const whichRange = this.whichRange(idx);
-          if (whichRange) {
-            return this.rangeStyles[whichRange];
-          }
-          return {};
-        });
-      },
+      // styleRange() {
+      //   return _.map(this.text, (obj, idx) => {
+      //     const whichRange = this.whichRange(idx);
+      //     if (whichRange) {
+      //       return this.rangeStyles[whichRange];
+      //     }
+      //     return {};
+      //   });
+      // },
     },
     methods: {
       getRangeStyle(rangeNames) {
@@ -84,22 +93,22 @@
 
         if (rangeNames.length === 1) {
           return this.rangeStyles[rangeNames[0]];
-        } else {
-          const allRangeColors = _.map(rangeNames, r => this.rangeStyles[r]['background-color']);
-          console.log(this.rangeStyles, rangeNames, allRangeColors);
-          const sWidth = 20;
-          let bgStringStart = `repeating-linear-gradient(45deg, ${allRangeColors[0]}, ${allRangeColors[0]} ${sWidth}px`;
-
-          for (let i = 1; i < allRangeColors.length; i += 1) {
-            bgStringStart += `,${allRangeColors[i]} ${sWidth}px`;
-            bgStringStart += `,${allRangeColors[i]} ${sWidth * (i + 1)}px`;
-          }
-          console.log(`${bgStringStart})`);
-          return {
-            color: 'white',
-            background: `${bgStringStart})`,
-          };
         }
+
+        const allRangeColors = _.map(rangeNames, r => this.rangeStyles[r]['background-color']);
+        console.log(this.rangeStyles, rangeNames, allRangeColors);
+        const sWidth = 20;
+        let bgStringStart = `repeating-linear-gradient(45deg, ${allRangeColors[0]}, ${allRangeColors[0]} ${sWidth}px`;
+
+        for (let i = 1; i < allRangeColors.length; i += 1) {
+          bgStringStart += `,${allRangeColors[i]} ${sWidth}px`;
+          bgStringStart += `,${allRangeColors[i]} ${sWidth * (i + 1)}px`;
+        }
+        console.log(`${bgStringStart})`);
+        return {
+          color: 'white',
+          background: `${bgStringStart})`,
+        };
       },
       rangeAction(i) {
         const selectedRange = this.rangeText[i]; // this.whichRange(i);
@@ -147,6 +156,9 @@
           const mergeableArray = _.map(rangeBelong, b => this.rangeStyles[b].mergeable);
           // if mergeable array has a False, then...
           if (mergeableArray.indexOf(false) >= 0) {
+            // const clashingClasses = _.filter(rangeBelong, (d, i) => mergeableArray[i]);
+            // console.log('which class', clashingClasses);
+            // this.$emit('editRange', whichClass, whichRange, newRange);
             return [rangeBelong[mergeableArray.indexOf(false)]];
           }
 
@@ -161,7 +173,11 @@
             const ranges = this.rangeClasses[R];
 
             // TODO: there is a 0 here!!
-            const rElem = _.filter(ranges, r => r[0] === cRange.start);
+            const rElem = _.filter(ranges, (r) => {
+              console.log('rangeBounds!', r, cRange.rangeBounds);
+              return _.isEqual(r, cRange.rangeBounds) || r[0] === cRange.start;
+              // r[0] === cRange.start;
+            });
             console.log(rElem);
             const idx = ranges.indexOf(rElem[0]);
             console.log(idx, this.ranges);

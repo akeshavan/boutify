@@ -382,8 +382,11 @@
       },
       setCurrentRange(cRange) {
         console.log('setting current range', cRange);
-        if (cRange != null) {
+        if (cRange != null && this.highlightMode === 'help') {
           this.currentRange = cRange[0].replace('p', 'h');
+        } else {
+          // have to remove the new parameter that was added.
+          this.rangeClasses[cRange[0]] = [];
         }
       },
       initRanges() {
@@ -492,12 +495,11 @@
                   this.$set(this.rangeActions, k, 'emitRemoveRange');
                 }
               });
-
             } else {
               console.log('there is nothing to annotate, but did someone delete stuff?');
               if (val.user && val.time) {
                 // delete all h keys!
-                _.map(allKeys, (k) => {
+                _.map(existingKeys, (k) => {
                   if (k[0] === 'h') {
                     this.rangeClasses[k] = [];
                   }
