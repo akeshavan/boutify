@@ -439,23 +439,60 @@
         db.ref('latestCmdlines').child(this.$route.params.cmdline).once('value')
         .then((snap) => {
           const val = snap.val();
-          const newRangeClasses = this.rangeClasses;
-          const allKeys = Object.keys(newRangeClasses);
-          console.log('new range classes', newRangeClasses);
+          const RangeClasses = this.rangeClasses;
+          const existingKeys = Object.keys(RangeClasses);
+          console.log('existing range classes', RangeClasses);
 
           if (val) {
             if (val.annot) {
               // pop out all the h classes, and then replace w/ rclasses
               const annotKeys = Object.keys(val.annot);
-              _.map(allKeys, (k) => {
-                if (k[0] === 'h') {
-                  if (annotKeys.indexOf(k) >= 0) {
-                    this.rangeClasses[k] = val.annot[k];
-                  } else {
-                    this.rangeClasses[k] = [];
-                  }
+              _.map(existingKeys, (k) => {
+                // if (k[0] === 'h') {
+                if (annotKeys.indexOf(k) >= 0) {
+                  // this.$set(this.rangeClasses, k, val.annot[k]);
+                  this.rangeClasses[k] = val.annot[k];
+                } else {
+                  this.rangeClasses[k] = [];
+                  // this.$set(this.rangeClasses, k, []);
+                }
+                // }
+              });
+
+              // but if there were new keys added, add them to the Vue class
+              const newKeys = _.filter(annotKeys, a => existingKeys.indexOf(a) < 0);
+              _.map(newKeys, (k) => {
+                this.$set(this.rangeClasses, k, val.annot[k]);
+                // const N = _.filter(Object.keys(this.rangeClasses), x => x[0] === 'p').length;
+                const color = d3.schemeDark2[parseInt(k.replace('p', '').replace('h', ''), 0) % 8];
+                // console.log(N % 8, color);
+                if (k[0] === 'p') {
+                  // give the style and action parameters here for help text
+                  this.$set(this.rangeStyles, k, {
+                    'border-bottom-color': color,
+                    'border-bottom-style': 'solid',
+                    'border-top-color': color,
+                    'border-top-style': 'solid',
+                    'font-weight': 'bold',
+                    'background-color': 'white',
+                    // 'background-color': pcolor,
+                    color,
+                    cursor: 'pointer',
+                    mergeable: false,
+                  });
+                  this.$set(this.rangeActions, k, 'emitRange');
+                } else {
+                  // give the style and action parameters here for parameter name;
+                  this.$set(this.rangeStyles, k, {
+                    'background-color': color,
+                    color: 'white',
+                    cursor: 'pointer',
+                    mergeable: true,
+                  });
+                  this.$set(this.rangeActions, k, 'emitRemoveRange');
                 }
               });
+
             } else {
               console.log('there is nothing to annotate, but did someone delete stuff?');
               if (val.user && val.time) {
@@ -480,12 +517,10 @@
         const toSubmit = {};
 
         _.map(rC, (rangeKey) => {
-          if (rangeKey[0] === 'h') {
-            toSubmit[rangeKey] = this.rangeClasses[rangeKey].reduce((acc, cur, i) => {
-              acc[i] = cur;
-              return acc;
-            }, {});
-          }
+          toSubmit[rangeKey] = this.rangeClasses[rangeKey].reduce((acc, cur, i) => {
+            acc[i] = cur;
+            return acc;
+          }, {});
         });
 
         // emit to App to submit

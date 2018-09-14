@@ -155,16 +155,16 @@
         return null;
       },
       removeRange(i, cRange) {
-        // console.log('remove range', i, cRange);
+        console.log('remove range', i, cRange);
         if (cRange.rangeName != null) {
           _.map(cRange.rangeName, (R) => {
             const ranges = this.rangeClasses[R];
 
             // TODO: there is a 0 here!!
             const rElem = _.filter(ranges, r => r[0] === cRange.start);
-            // console.log(rElem);
+            console.log(rElem);
             const idx = ranges.indexOf(rElem[0]);
-            // console.log(idx, this.ranges);
+            console.log(idx, this.ranges);
             if (idx > -1) {
               this.rangeClasses[R].splice(idx, 1);
             }
